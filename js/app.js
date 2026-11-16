@@ -15,7 +15,8 @@ async function loadProfile() {
   if (!snap.exists()) return;
 
   const data = snap.data();
-  document.getElementById("profile-name").textContent = data.name || "";
+  if (data.name) document.getElementById("profile-name").textContent = data.name;
+  document.getElementById("profile-tagline").textContent = data.tagline || "";
   document.getElementById("profile-bio").textContent = data.bio || "";
 
   if (data.photoUrl) {
@@ -29,7 +30,7 @@ async function loadProfile() {
   Object.entries(links).forEach(([label, url]) => {
     if (!url) return;
     const a = document.createElement("a");
-    a.href = url;
+    a.href = label === "Correo" && !url.startsWith("mailto:") ? "mailto:" + url : url;
     a.target = "_blank";
     a.rel = "noopener noreferrer";
     a.textContent = label;
@@ -65,6 +66,7 @@ function createProjectCard(project) {
     link.target = "_blank";
     link.rel = "noopener noreferrer";
     link.textContent = "Ver proyecto →";
+    link.setAttribute("aria-label", "Ver proyecto " + (project.title || ""));
     body.appendChild(link);
   }
 

@@ -53,6 +53,7 @@ async function loadProfileIntoForm() {
   if (!snap.exists()) return;
   const data = snap.data();
   document.getElementById("profile-name-input").value = data.name || "";
+  document.getElementById("profile-tagline-input").value = data.tagline || "";
   document.getElementById("profile-bio-input").value = data.bio || "";
   document.getElementById("profile-photo-input").value = data.photoUrl || "";
   const links = data.links || {};
@@ -69,6 +70,7 @@ document.getElementById("profile-form").addEventListener("submit", async (e) => 
   try {
     await setDoc(doc(db, "profile", "info"), {
       name: document.getElementById("profile-name-input").value,
+      tagline: document.getElementById("profile-tagline-input").value,
       bio: document.getElementById("profile-bio-input").value,
       photoUrl: document.getElementById("profile-photo-input").value,
       links: {

@@ -7,18 +7,37 @@
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-  <header class="hero">
-    <img id="profile-photo" class="profile-photo" src="" alt="Foto de perfil" hidden />
-    <h1 id="profile-name">Cargando…</h1>
-    <p id="profile-bio"></p>
-    <div id="profile-links" class="links"></div>
+  <a class="skip-link" href="#contenido">Saltar al contenido</a>
+
+  <header class="site-header">
+    <a class="brand" href="#inicio">El mundo de Lishi</a>
+    <nav aria-label="Menú principal">
+      <ul class="menu">
+        <li><a href="#inicio">Inicio</a></li>
+        <li><a href="#proyectos">Mis proyectos</a></li>
+        <li><a href="#sobre-mi">Sobre mí</a></li>
+      </ul>
+    </nav>
   </header>
 
-  <main>
-    <section id="projects-section">
-      <h2>Proyectos</h2>
+  <main id="contenido">
+    <section id="inicio" class="hero" aria-labelledby="profile-name">
+      <img id="profile-photo" class="profile-photo" src="" alt="Foto de perfil" hidden />
+      <h1 id="profile-name">El mundo de Lishi</h1>
+      <p id="profile-tagline" class="tagline"></p>
+      <a class="cta" href="#proyectos">Ver mis proyectos</a>
+    </section>
+
+    <section id="proyectos" class="section" aria-labelledby="proyectos-titulo">
+      <h2 id="proyectos-titulo">Mis proyectos</h2>
       <div id="projects-grid" class="projects-grid"></div>
       <p id="projects-empty" class="empty-msg" hidden>Todavía no hay proyectos publicados.</p>
+    </section>
+
+    <section id="sobre-mi" class="section" aria-labelledby="sobre-mi-titulo">
+      <h2 id="sobre-mi-titulo">Sobre mí</h2>
+      <p id="profile-bio" class="bio"></p>
+      <div id="profile-links" class="links"></div>
     </section>
   </main>
 
