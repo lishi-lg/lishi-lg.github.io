@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin — El mundo de Lishi</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/admin.css" />
+</head>
+<body class="admin-body">
+
+  <section id="login-view" class="admin-panel">
+    <h1>Iniciar sesión</h1>
+    <form id="login-form">
+      <input type="email" id="login-email" placeholder="Correo" required />
+      <input type="password" id="login-password" placeholder="Contraseña" required />
+      <button type="submit">Entrar</button>
+    </form>
+    <p id="login-error" class="error-msg" hidden></p>
+  </section>
+
+  <section id="dashboard-view" class="admin-panel" hidden>
+    <div class="admin-header">
+      <h1>Panel de administración</h1>
+      <button id="logout-btn">Cerrar sesión</button>
+    </div>
+
+    <div class="admin-block">
+      <h2>Perfil</h2>
+      <form id="profile-form">
+        <label>Nombre
+          <input type="text" id="profile-name-input" />
+        </label>
+        <label>Bio
+          <textarea id="profile-bio-input" rows="3"></textarea>
+        </label>
+        <label>Foto de perfil (link de la imagen)
+          <input type="url" id="profile-photo-input" placeholder="https://..." />
+        </label>
+        <fieldset>
+          <legend>Enlaces</legend>
+          <label>GitHub <input type="url" id="link-github" placeholder="https://github.com/..." /></label>
+          <label>LinkedIn <input type="url" id="link-linkedin" placeholder="https://linkedin.com/in/..." /></label>
+          <label>Correo <input type="text" id="link-email" placeholder="mailto:tu@correo.com" /></label>
+        </fieldset>
+        <button type="submit">Guardar perfil</button>
+      </form>
+      <p id="profile-status" class="status-msg"></p>
+    </div>
+
+    <div class="admin-block">
+      <h2>Agregar proyecto</h2>
+      <form id="project-form">
+        <input type="text" id="project-title" placeholder="Título" required />
+        <textarea id="project-description" placeholder="Descripción" rows="2" required></textarea>
+        <input type="url" id="project-link" placeholder="Link del proyecto (opcional)" />
+        <input type="number" id="project-order" placeholder="Orden (0, 1, 2...)" value="0" />
+        <input type="url" id="project-image" placeholder="Link de la imagen (https://...)" required />
+        <button type="submit">Agregar</button>
+      </form>
+      <p id="project-status" class="status-msg"></p>
+    </div>
+
+    <div class="admin-block">
+      <h2>Proyectos existentes</h2>
+      <div id="admin-projects-list" class="admin-projects-list"></div>
+    </div>
+  </section>
+
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>
