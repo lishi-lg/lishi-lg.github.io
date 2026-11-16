@@ -119,9 +119,11 @@ async function loadProjectsList() {
     const row = document.createElement("div");
     row.className = "admin-project-row";
 
-    const img = document.createElement("img");
-    img.src = project.imageUrl || "";
-    row.appendChild(img);
+    if (project.imageUrl) {
+      const img = document.createElement("img");
+      img.src = project.imageUrl;
+      row.appendChild(img);
+    }
 
     const info = document.createElement("div");
     info.className = "info";
