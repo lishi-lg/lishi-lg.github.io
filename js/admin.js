@@ -1,4 +1,5 @@
 import { db, auth } from "./firebase-config.js";
+import { pintarTexto } from "./texto.js";
 import {
   onAuthStateChanged,
   signInWithEmailAndPassword,
@@ -60,7 +61,34 @@ async function loadProfileIntoForm() {
   document.getElementById("link-github").value = links.GitHub || "";
   document.getElementById("link-linkedin").value = links.LinkedIn || "";
   document.getElementById("link-email").value = links.Correo || "";
+  actualizarVista();
 }
+
+// Vista previa de la frase y del "Sobre mí", tal como saldrán en la portada
+function enlacesDelFormulario() {
+  return {
+    GitHub: document.getElementById("link-github").value,
+    LinkedIn: document.getElementById("link-linkedin").value,
+    Correo: document.getElementById("link-email").value
+  };
+}
+
+function actualizarVista() {
+  const links = enlacesDelFormulario();
+  const a = pintarTexto(document.getElementById("vista-frase"), document.getElementById("profile-tagline-input").value, links, { parrafos: false });
+  const b = pintarTexto(document.getElementById("vista-bio"), document.getElementById("profile-bio-input").value, links);
+  const problemas = [...a.problemas, ...b.problemas];
+  const aviso = document.getElementById("vista-avisos");
+  aviso.hidden = !problemas.length;
+  aviso.textContent = problemas.length
+    ? "Estos enlaces no funcionan y saldrán como texto normal: " + problemas.join(", ") +
+      ". Revisa lo que hay entre paréntesis, o rellena el enlace en el apartado Enlaces."
+    : "";
+}
+
+["profile-tagline-input", "profile-bio-input", "link-github", "link-linkedin", "link-email"].forEach((id) =>
+  document.getElementById(id).addEventListener("input", actualizarVista)
+);
 
 document.getElementById("profile-form").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -132,7 +160,7 @@ async function loadProjectsList() {
     const title = document.createElement("h3");
     title.textContent = project.title || "";
     const desc = document.createElement("p");
-    desc.textContent = project.description || "";
+    pintarTexto(desc, project.description || "", enlacesDelFormulario(), { parrafos: false });
     info.appendChild(title);
     info.appendChild(desc);
     row.appendChild(info);

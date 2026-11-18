@@ -27,16 +27,31 @@
 
     <div class="admin-block">
       <h2>Perfil</h2>
+      <div id="ayuda-enlaces" class="ayuda">
+        <p>Puedes poner enlaces dentro de la frase de bienvenida, del texto "Sobre mí" y de la descripción de los proyectos. Escribe entre corchetes la palabra que se verá y, justo detrás, entre paréntesis, a dónde lleva:</p>
+        <ul>
+          <li><code>haz clic [aquí](github)</code>: "aquí" lleva a tu GitHub.</li>
+          <li><code>envíame un [email](correo)</code>: "email" abre un correo para ti.</li>
+          <li>También valen <code>(linkedin)</code>, una dirección completa como <code>(https://lishi-lg.github.io/batalla_de_orvan/)</code> o un correo como <code>(alguien@correo.com)</code>.</li>
+        </ul>
+        <p>github, linkedin y correo usan los enlaces que pongas más abajo, en el apartado Enlaces; si un enlace ya sale dentro del texto, no se repite como botón. Deja una línea en blanco para empezar otro párrafo.</p>
+      </div>
       <form id="profile-form">
         <label>Nombre
           <input type="text" id="profile-name-input" />
         </label>
         <label>Frase de bienvenida (sale en la portada)
-          <input type="text" id="profile-tagline-input" placeholder="Bienvenidos a mi mundo..." />
+          <input type="text" id="profile-tagline-input" placeholder="Bienvenidos a mi mundo..." aria-describedby="ayuda-enlaces" />
         </label>
         <label>Sobre mí (sale en la sección "Sobre mí")
-          <textarea id="profile-bio-input" rows="5"></textarea>
+          <textarea id="profile-bio-input" rows="5" aria-describedby="ayuda-enlaces"></textarea>
         </label>
+        <section class="vista-previa" aria-labelledby="titulo-vista">
+          <h3 id="titulo-vista">Vista previa</h3>
+          <p class="tagline" id="vista-frase"></p>
+          <div class="bio" id="vista-bio"></div>
+          <p id="vista-avisos" class="error-msg" hidden></p>
+        </section>
         <label>Foto de perfil (link de la imagen)
           <input type="url" id="profile-photo-input" placeholder="https://..." />
         </label>

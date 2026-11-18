@@ -1,4 +1,5 @@
 import { db } from "./firebase-config.js";
+import { pintarTexto } from "./texto.js";
 import {
   doc,
   getDoc,
@@ -12,12 +13,14 @@ document.getElementById("year").textContent = new Date().getFullYear();
 
 async function loadProfile() {
   const snap = await getDoc(doc(db, "profile", "info"));
-  if (!snap.exists()) return;
+  if (!snap.exists()) return {};
 
   const data = snap.data();
   if (data.name) document.getElementById("profile-name").textContent = data.name;
-  document.getElementById("profile-tagline").textContent = data.tagline || "";
-  document.getElementById("profile-bio").textContent = data.bio || "";
+  const links = data.links || {};
+  // la frase de bienvenida y el "Sobre mí" pueden llevar enlaces dentro del texto
+  const enFrase = pintarTexto(document.getElementById("profile-tagline"), data.tagline || "", links, { parrafos: false });
+  const enBio = pintarTexto(document.getElementById("profile-bio"), data.bio || "", links);
 
   if (data.photoUrl) {
     const img = document.getElementById("profile-photo");
@@ -26,9 +29,9 @@ async function loadProfile() {
   }
 
   const linksEl = document.getElementById("profile-links");
-  const links = data.links || {};
   Object.entries(links).forEach(([label, url]) => {
-    if (!url) return;
+    // si el enlace ya sale dentro del texto, no se repite abajo
+    if (!url || enFrase.usados.has(label) || enBio.usados.has(label)) return;
     const a = document.createElement("a");
     a.href = label === "Correo" && !url.startsWith("mailto:") ? "mailto:" + url : url;
     a.target = "_blank";
@@ -36,9 +39,10 @@ async function loadProfile() {
     a.textContent = label;
     linksEl.appendChild(a);
   });
+  return links;
 }
 
-function createProjectCard(project) {
+function createProjectCard(project, links) {
   const card = document.createElement("article");
   card.className = "project-card";
 
@@ -57,7 +61,7 @@ function createProjectCard(project) {
   body.appendChild(title);
 
   const desc = document.createElement("p");
-  desc.textContent = project.description || "";
+  pintarTexto(desc, project.description || "", links, { parrafos: false });
   body.appendChild(desc);
 
   if (project.link) {
@@ -74,7 +78,7 @@ function createProjectCard(project) {
   return card;
 }
 
-async function loadProjects() {
+async function loadProjects(links) {
   const grid = document.getElementById("projects-grid");
   const q = query(collection(db, "projects"), orderBy("order", "asc"));
   const snap = await getDocs(q);
@@ -85,9 +89,12 @@ async function loadProjects() {
   }
 
   snap.forEach((docSnap) => {
-    grid.appendChild(createProjectCard(docSnap.data()));
+    grid.appendChild(createProjectCard(docSnap.data(), links));
   });
 }
 
-loadProfile().catch((err) => console.error("Error cargando perfil:", err));
-loadProjects().catch((err) => console.error("Error cargando proyectos:", err));
+// primero el perfil, porque los textos de los proyectos pueden usar sus enlaces (github, correo...)
+loadProfile()
+  .catch((err) => { console.error("Error cargando perfil:", err); return {}; })
+  .then((links) => loadProjects(links))
+  .catch((err) => console.error("Error cargando proyectos:", err));
