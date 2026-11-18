@@ -127,8 +127,23 @@ button:hover {
 
 .admin-project-row button {
   background: transparent;
+  flex-shrink: 0;
+}
+
+.btn-editar,
+.btn-secundario {
+  background: transparent;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.btn-eliminar {
   color: #ff6b6b;
   border: 1px solid #ff6b6b;
+}
+
+[hidden] {
+  display: none !important;
 }
 
 .ayuda {

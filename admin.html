@@ -63,20 +63,21 @@
         </fieldset>
         <button type="submit">Guardar perfil</button>
       </form>
-      <p id="profile-status" class="status-msg"></p>
+      <p id="profile-status" class="status-msg" role="status"></p>
     </div>
 
     <div class="admin-block">
-      <h2>Agregar proyecto</h2>
+      <h2 id="project-form-title">Agregar proyecto</h2>
       <form id="project-form">
         <input type="text" id="project-title" placeholder="Título" required />
         <textarea id="project-description" placeholder="Descripción" rows="2" required></textarea>
         <input type="url" id="project-link" placeholder="Link del proyecto (opcional)" />
         <input type="number" id="project-order" placeholder="Orden (0, 1, 2...)" value="0" />
         <input type="url" id="project-image" placeholder="Link de la imagen (opcional)" />
-        <button type="submit">Agregar</button>
+        <button type="submit" id="project-submit">Agregar</button>
+        <button type="button" id="project-cancel" class="btn-secundario" hidden>Cancelar la edición</button>
       </form>
-      <p id="project-status" class="status-msg"></p>
+      <p id="project-status" class="status-msg" role="status"></p>
     </div>
 
     <div class="admin-block">

@@ -11,6 +11,7 @@ import {
   setDoc,
   collection,
   addDoc,
+  updateDoc,
   deleteDoc,
   query,
   orderBy,
@@ -114,23 +115,61 @@ document.getElementById("profile-form").addEventListener("submit", async (e) => 
   }
 });
 
-document.getElementById("project-form").addEventListener("submit", async (e) => {
+// El mismo formulario sirve para agregar un proyecto o para editar uno existente
+const projectForm = document.getElementById("project-form");
+let editandoId = null;
+
+function empezarEdicion(id, project) {
+  editandoId = id;
+  document.getElementById("project-title").value = project.title || "";
+  document.getElementById("project-description").value = project.description || "";
+  document.getElementById("project-link").value = project.link || "";
+  document.getElementById("project-order").value = project.order ?? 0;
+  document.getElementById("project-image").value = project.imageUrl || "";
+  document.getElementById("project-form-title").textContent = "Editar proyecto: " + (project.title || "");
+  document.getElementById("project-submit").textContent = "Guardar cambios";
+  document.getElementById("project-cancel").hidden = false;
+  document.getElementById("project-status").textContent = "";
+  projectForm.scrollIntoView({ block: "center" });
+  document.getElementById("project-title").focus();
+}
+
+function terminarEdicion() {
+  editandoId = null;
+  projectForm.reset();
+  document.getElementById("project-form-title").textContent = "Agregar proyecto";
+  document.getElementById("project-submit").textContent = "Agregar";
+  document.getElementById("project-cancel").hidden = true;
+}
+
+document.getElementById("project-cancel").addEventListener("click", () => {
+  terminarEdicion();
+  document.getElementById("project-status").textContent = "Edición cancelada.";
+  document.getElementById("project-title").focus();
+});
+
+projectForm.addEventListener("submit", async (e) => {
   e.preventDefault();
   const statusEl = document.getElementById("project-status");
   statusEl.textContent = "Guardando…";
 
-  try {
-    await addDoc(collection(db, "projects"), {
-      title: document.getElementById("project-title").value,
-      description: document.getElementById("project-description").value,
-      link: document.getElementById("project-link").value,
-      order: Number(document.getElementById("project-order").value) || 0,
-      imageUrl: document.getElementById("project-image").value,
-      createdAt: Date.now()
-    });
+  const datos = {
+    title: document.getElementById("project-title").value,
+    description: document.getElementById("project-description").value,
+    link: document.getElementById("project-link").value,
+    order: Number(document.getElementById("project-order").value) || 0,
+    imageUrl: document.getElementById("project-image").value
+  };
 
-    statusEl.textContent = "Proyecto agregado ✓";
-    e.target.reset();
+  try {
+    if (editandoId) {
+      await updateDoc(doc(db, "projects", editandoId), datos);
+      statusEl.textContent = "Cambios guardados ✓";
+    } else {
+      await addDoc(collection(db, "projects"), { ...datos, createdAt: Date.now() });
+      statusEl.textContent = "Proyecto agregado ✓";
+    }
+    terminarEdicion();
     loadProjectsList();
   } catch (err) {
     statusEl.textContent = "Error: " + err.message;
@@ -165,11 +204,21 @@ async function loadProjectsList() {
     info.appendChild(desc);
     row.appendChild(info);
 
+    const editBtn = document.createElement("button");
+    editBtn.textContent = "Editar";
+    editBtn.className = "btn-editar";
+    editBtn.setAttribute("aria-label", "Editar " + (project.title || "proyecto"));
+    editBtn.addEventListener("click", () => empezarEdicion(docSnap.id, project));
+    row.appendChild(editBtn);
+
     const deleteBtn = document.createElement("button");
     deleteBtn.textContent = "Eliminar";
+    deleteBtn.className = "btn-eliminar";
+    deleteBtn.setAttribute("aria-label", "Eliminar " + (project.title || "proyecto"));
     deleteBtn.addEventListener("click", async () => {
       if (!confirm(`¿Eliminar "${project.title}"?`)) return;
       await deleteDoc(doc(db, "projects", docSnap.id));
+      if (editandoId === docSnap.id) terminarEdicion();
       loadProjectsList();
     });
     row.appendChild(deleteBtn);
