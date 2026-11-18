@@ -11,8 +11,9 @@
 
   <header class="site-header">
     <a class="brand" href="#inicio">El mundo de Lishi</a>
-    <nav aria-label="Menú principal">
-      <ul class="menu">
+    <nav class="nav" aria-label="Menú principal">
+      <button type="button" id="menu-btn" class="menu-btn" aria-expanded="false" aria-controls="menu-lista">Menú</button>
+      <ul id="menu-lista" class="menu" hidden>
         <li><a href="#inicio">Inicio</a></li>
         <li><a href="#proyectos">Mis proyectos</a></li>
         <li><a href="#sobre-mi">Sobre mí</a></li>
@@ -21,21 +22,20 @@
   </header>
 
   <main id="contenido">
-    <section id="inicio" class="hero" aria-labelledby="profile-name">
+    <section id="inicio" class="hero vista" aria-labelledby="profile-name">
       <img id="profile-photo" class="profile-photo" src="" alt="Foto de perfil" hidden />
-      <h1 id="profile-name">El mundo de Lishi</h1>
+      <h1 id="profile-name" tabindex="-1">El mundo de Lishi</h1>
       <p id="profile-tagline" class="tagline"></p>
-      <a class="cta" href="#proyectos">Ver mis proyectos</a>
     </section>
 
-    <section id="proyectos" class="section" aria-labelledby="proyectos-titulo">
-      <h2 id="proyectos-titulo">Mis proyectos</h2>
+    <section id="proyectos" class="section vista" aria-labelledby="proyectos-titulo" hidden>
+      <h2 id="proyectos-titulo" tabindex="-1">Mis proyectos</h2>
       <div id="projects-grid" class="projects-grid"></div>
       <p id="projects-empty" class="empty-msg" hidden>Todavía no hay proyectos publicados.</p>
     </section>
 
-    <section id="sobre-mi" class="section" aria-labelledby="sobre-mi-titulo">
-      <h2 id="sobre-mi-titulo">Sobre mí</h2>
+    <section id="sobre-mi" class="section vista" aria-labelledby="sobre-mi-titulo" hidden>
+      <h2 id="sobre-mi-titulo" tabindex="-1">Sobre mí</h2>
       <div id="profile-bio" class="bio"></div>
       <div id="profile-links" class="links"></div>
     </section>

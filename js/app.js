@@ -49,30 +49,30 @@ function createProjectCard(project, links) {
   if (project.imageUrl) {
     const img = document.createElement("img");
     img.src = project.imageUrl;
-    img.alt = project.title || "";
+    img.alt = ""; // el título ya dice qué proyecto es
     card.appendChild(img);
   }
 
   const body = document.createElement("div");
   body.className = "project-card-body";
 
+  // si el proyecto tiene enlace, el propio título es el enlace
   const title = document.createElement("h3");
-  title.textContent = project.title || "";
-  body.appendChild(title);
-
-  const desc = document.createElement("p");
-  pintarTexto(desc, project.description || "", links, { parrafos: false });
-  body.appendChild(desc);
-
   if (project.link) {
     const link = document.createElement("a");
     link.href = project.link;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
-    link.textContent = "Ver proyecto →";
-    link.setAttribute("aria-label", "Ver proyecto " + (project.title || ""));
-    body.appendChild(link);
+    link.textContent = project.title || project.link;
+    title.appendChild(link);
+  } else {
+    title.textContent = project.title || "";
   }
+  body.appendChild(title);
+
+  const desc = document.createElement("p");
+  pintarTexto(desc, project.description || "", links, { parrafos: false });
+  body.appendChild(desc);
 
   card.appendChild(body);
   return card;
@@ -98,3 +98,51 @@ loadProfile()
   .catch((err) => { console.error("Error cargando perfil:", err); return {}; })
   .then((links) => loadProjects(links))
   .catch((err) => console.error("Error cargando proyectos:", err));
+
+// ================== MENÚ Y SECCIONES ==================
+// Solo se ve una sección a la vez: la portada, Mis proyectos o Sobre mí.
+const menuBtn = document.getElementById("menu-btn");
+const menuLista = document.getElementById("menu-lista");
+const vistas = [...document.querySelectorAll(".vista")];
+const TITULO_SITIO = document.title;
+
+function abrirMenu(abrir) {
+  menuLista.hidden = !abrir;
+  menuBtn.setAttribute("aria-expanded", String(abrir));
+}
+
+menuBtn.addEventListener("click", () => {
+  const abrir = menuLista.hidden;
+  abrirMenu(abrir);
+  if (abrir) menuLista.querySelector("a").focus();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && !menuLista.hidden) {
+    abrirMenu(false);
+    menuBtn.focus();
+  }
+});
+
+document.addEventListener("click", (e) => {
+  if (!menuLista.hidden && !e.target.closest(".nav")) abrirMenu(false);
+});
+
+function mostrarVista(moverFoco) {
+  const id = location.hash.slice(1);
+  const vista = vistas.find((v) => v.id === id) || vistas[0];
+  vistas.forEach((v) => (v.hidden = v !== vista));
+  menuLista.querySelectorAll("a").forEach((a) => {
+    if (a.getAttribute("href") === "#" + vista.id) a.setAttribute("aria-current", "page");
+    else a.removeAttribute("aria-current");
+  });
+  const titulo = vista.querySelector("h1, h2");
+  document.title = vista === vistas[0] ? TITULO_SITIO : titulo.textContent + " — " + TITULO_SITIO;
+  abrirMenu(false);
+  window.scrollTo(0, 0);
+  // al cambiar de sección, el lector empieza a leer desde su título
+  if (moverFoco) titulo.focus();
+}
+
+window.addEventListener("hashchange", () => mostrarVista(true));
+mostrarVista(false);

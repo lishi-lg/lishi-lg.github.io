@@ -67,23 +67,74 @@ button:focus-visible {
   font-size: 1.1rem;
 }
 
+.nav {
+  position: relative;
+}
+
+.menu-btn {
+  font: inherit;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.45rem 1.1rem;
+  cursor: pointer;
+}
+
+.menu-btn::after {
+  content: " \25BE" / "";
+}
+
+.menu-btn[aria-expanded="true"]::after {
+  content: " \25B4" / "";
+}
+
 .menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.5rem);
+  min-width: 12rem;
   list-style: none;
   margin: 0;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 1.25rem;
+  padding: 0.4rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.menu[hidden] {
+  display: none;
 }
 
 .menu a {
-  color: var(--text-muted);
+  display: block;
+  padding: 0.6rem 0.9rem;
+  border-radius: 6px;
+  color: var(--text);
   text-decoration: none;
   font-weight: 500;
 }
 
-.menu a:hover {
+.menu a:hover,
+.menu a:focus-visible {
+  background: var(--bg);
   color: var(--accent);
+}
+
+.menu a[aria-current="page"] {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.vista[hidden] {
+  display: none;
+}
+
+h1:focus,
+h2:focus {
+  outline: none;
 }
 
 .hero {
@@ -115,20 +166,6 @@ button:focus-visible {
   margin: 0 auto 2rem;
   color: var(--text-muted);
   font-size: 1.2rem;
-}
-
-.cta {
-  display: inline-block;
-  padding: 0.75rem 1.5rem;
-  border-radius: 999px;
-  background: var(--accent);
-  color: #0f1115;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.cta:hover {
-  filter: brightness(1.1);
 }
 
 .section {
@@ -211,14 +248,12 @@ main {
   font-size: 0.95rem;
 }
 
-.project-card-body a {
-  margin-top: auto;
+.project-card-body h3 a {
   color: var(--accent);
   text-decoration: none;
-  font-weight: 600;
 }
 
-.project-card-body a:hover {
+.project-card-body h3 a:hover {
   text-decoration: underline;
 }
 
