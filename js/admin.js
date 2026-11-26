@@ -226,3 +226,216 @@ async function loadProjectsList() {
     listEl.appendChild(row);
   });
 }
+
+// ================== TUTORIALES (categorías > tutoriales > capítulos) ==================
+// El mismo patrón que los proyectos: un formulario para agregar o editar, lista con Editar y Eliminar.
+
+function hacerCrud({ prefijo, coleccion, leerFormulario, rellenarFormulario, textoFila, trasGuardar }) {
+  const form = document.getElementById(prefijo + "-form") || document.getElementById(prefijo + "-admin-form");
+  const titulo = document.getElementById(prefijo + "-form-title");
+  const submit = document.getElementById(prefijo + "-submit");
+  const cancel = document.getElementById(prefijo + "-cancel");
+  const status = document.getElementById(prefijo + "-status");
+  const lista = document.getElementById("admin-" + prefijo + "-list");
+  let editandoId = null;
+
+  function terminarEdicion() {
+    editandoId = null;
+    form.reset();
+    titulo.textContent = titulo.textContent.replace(/^Editar.*$/, "Agregar " + titulo.dataset.base);
+    submit.textContent = "Agregar";
+    cancel.hidden = true;
+  }
+  titulo.dataset.base = titulo.textContent.replace(/^Agregar /, "");
+
+  cancel.addEventListener("click", () => {
+    terminarEdicion();
+    status.textContent = "Edición cancelada.";
+  });
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    status.textContent = "Guardando…";
+    const datos = leerFormulario();
+    try {
+      if (editandoId) {
+        await updateDoc(doc(db, coleccion, editandoId), datos);
+        status.textContent = "Cambios guardados ✓";
+      } else {
+        await addDoc(collection(db, coleccion), { ...datos, createdAt: Date.now() });
+        status.textContent = "Agregado ✓";
+      }
+      terminarEdicion();
+      cargarLista();
+      if (trasGuardar) trasGuardar();
+    } catch (err) {
+      status.textContent = "Error: " + err.message;
+    }
+  });
+
+  async function cargarLista() {
+    lista.innerHTML = "";
+    const snap = await getDocs(query(collection(db, coleccion), orderBy("order", "asc")));
+    snap.forEach((docSnap) => {
+      const dato = docSnap.data();
+      const row = document.createElement("div");
+      row.className = "admin-project-row";
+      const info = document.createElement("div");
+      info.className = "info";
+      const h = document.createElement("h3");
+      h.textContent = textoFila(dato).titulo;
+      info.appendChild(h);
+      const detalle = textoFila(dato).detalle;
+      if (detalle) {
+        const p = document.createElement("p");
+        p.textContent = detalle;
+        info.appendChild(p);
+      }
+      row.appendChild(info);
+
+      const editBtn = document.createElement("button");
+      editBtn.textContent = "Editar";
+      editBtn.className = "btn-editar";
+      editBtn.setAttribute("aria-label", "Editar " + textoFila(dato).titulo);
+      editBtn.addEventListener("click", () => {
+        editandoId = docSnap.id;
+        rellenarFormulario(dato);
+        titulo.textContent = "Editar: " + textoFila(dato).titulo;
+        submit.textContent = "Guardar cambios";
+        cancel.hidden = false;
+        status.textContent = "";
+        form.scrollIntoView({ block: "center" });
+        form.querySelector("input, textarea, select").focus();
+      });
+      row.appendChild(editBtn);
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.textContent = "Eliminar";
+      deleteBtn.className = "btn-eliminar";
+      deleteBtn.setAttribute("aria-label", "Eliminar " + textoFila(dato).titulo);
+      deleteBtn.addEventListener("click", async () => {
+        if (!confirm(`¿Eliminar "${textoFila(dato).titulo}"?`)) return;
+        await deleteDoc(doc(db, coleccion, docSnap.id));
+        if (editandoId === docSnap.id) terminarEdicion();
+        cargarLista();
+        if (trasGuardar) trasGuardar();
+      });
+      row.appendChild(deleteBtn);
+
+      lista.appendChild(row);
+    });
+  }
+
+  return cargarLista;
+}
+
+// --- categorías de tutoriales ---
+let cacheCategorias = [];
+let cacheTutoriales = [];
+
+const cargarCategorias = hacerCrud({
+  prefijo: "cat",
+  coleccion: "tut_categories",
+  leerFormulario: () => ({
+    title: document.getElementById("cat-title").value,
+    intro: document.getElementById("cat-intro").value,
+    aviso: document.getElementById("cat-aviso").value,
+    order: Number(document.getElementById("cat-order").value) || 0
+  }),
+  rellenarFormulario: (c) => {
+    document.getElementById("cat-title").value = c.title || "";
+    document.getElementById("cat-intro").value = c.intro || "";
+    document.getElementById("cat-aviso").value = c.aviso || "";
+    document.getElementById("cat-order").value = c.order ?? 0;
+  },
+  textoFila: (c) => ({ titulo: c.title || "", detalle: c.aviso ? "Con aviso: " + c.aviso : "" }),
+  trasGuardar: () => refrescarSelectsTutoriales()
+});
+
+// --- tutoriales ---
+const cargarTutoriales = hacerCrud({
+  prefijo: "tut",
+  coleccion: "tut_tutorials",
+  leerFormulario: () => ({
+    categoryId: document.getElementById("tut-cat").value,
+    title: document.getElementById("tut-title").value,
+    description: document.getElementById("tut-desc").value,
+    order: Number(document.getElementById("tut-order").value) || 0
+  }),
+  rellenarFormulario: (t) => {
+    document.getElementById("tut-cat").value = t.categoryId || "";
+    document.getElementById("tut-title").value = t.title || "";
+    document.getElementById("tut-desc").value = t.description || "";
+    document.getElementById("tut-order").value = t.order ?? 0;
+  },
+  textoFila: (t) => ({
+    titulo: t.title || "",
+    detalle: "Categoría: " + ((cacheCategorias.find((c) => c.id === t.categoryId) || {}).title || "?")
+  }),
+  trasGuardar: () => refrescarSelectsTutoriales()
+});
+
+// --- capítulos ---
+const cargarCapitulos = hacerCrud({
+  prefijo: "cap",
+  coleccion: "tut_chapters",
+  leerFormulario: () => ({
+    tutorialId: document.getElementById("cap-tut").value,
+    title: document.getElementById("cap-title").value,
+    audioUrl: document.getElementById("cap-audio").value,
+    order: Number(document.getElementById("cap-order").value) || 0
+  }),
+  rellenarFormulario: (c) => {
+    document.getElementById("cap-tut").value = c.tutorialId || "";
+    document.getElementById("cap-title").value = c.title || "";
+    document.getElementById("cap-audio").value = c.audioUrl || "";
+    document.getElementById("cap-order").value = c.order ?? 0;
+  },
+  textoFila: (c) => ({
+    titulo: c.title || "",
+    detalle: "Tutorial: " + ((cacheTutoriales.find((t) => t.id === c.tutorialId) || {}).title || "?")
+  })
+});
+
+// rellena los dos cuadros del panel (categoría de un tutorial, tutorial de un capítulo)
+async function refrescarSelectsTutoriales() {
+  const [snapCat, snapTut] = await Promise.all([
+    getDocs(query(collection(db, "tut_categories"), orderBy("order", "asc"))),
+    getDocs(query(collection(db, "tut_tutorials"), orderBy("order", "asc")))
+  ]);
+  cacheCategorias = snapCat.docs.map((d) => ({ id: d.id, ...d.data() }));
+  cacheTutoriales = snapTut.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+  const selCat = document.getElementById("tut-cat");
+  const valorCat = selCat.value;
+  selCat.replaceChildren(...cacheCategorias.map((c) => {
+    const o = document.createElement("option");
+    o.value = c.id;
+    o.textContent = c.title || "";
+    return o;
+  }));
+  selCat.value = valorCat;
+
+  const selTut = document.getElementById("cap-tut");
+  const valorTut = selTut.value;
+  selTut.replaceChildren(...cacheTutoriales.map((t) => {
+    const o = document.createElement("option");
+    o.value = t.id;
+    const cat = cacheCategorias.find((c) => c.id === t.categoryId);
+    o.textContent = (cat ? cat.title + " — " : "") + (t.title || "");
+    return o;
+  }));
+  selTut.value = valorTut;
+}
+
+async function cargarSeccionTutoriales() {
+  await refrescarSelectsTutoriales();
+  await cargarCategorias();
+  await cargarTutoriales();
+  await cargarCapitulos();
+}
+
+// se cargan al entrar, junto con el perfil y los proyectos
+const _onAuthTutoriales = onAuthStateChanged(auth, (user) => {
+  if (user) cargarSeccionTutoriales().catch((err) => console.error("Error cargando tutoriales:", err));
+});
