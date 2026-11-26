@@ -124,8 +124,10 @@ function mostrarDescripcionTutorial(id) {
 const PIDE_VISTA = new URLSearchParams(location.search).has("vista");
 let VISTA_PREVIA = false;
 if (PIDE_VISTA) {
+  // si no hay sesión (o el navegador tarda en decirlo), la página sale como la ve el público, nunca vacía
   VISTA_PREVIA = await new Promise((resolve) => {
-    const dejarDeEscuchar = onAuthStateChanged(auth, (usuario) => { dejarDeEscuchar(); resolve(!!usuario); });
+    const plazo = setTimeout(() => resolve(false), 4000);
+    const dejarDeEscuchar = onAuthStateChanged(auth, (usuario) => { clearTimeout(plazo); dejarDeEscuchar(); resolve(!!usuario); }, () => { clearTimeout(plazo); resolve(false); });
   });
   const avisoVista = document.createElement("p");
   avisoVista.id = "vista-aviso";
@@ -135,7 +137,7 @@ if (PIDE_VISTA) {
   setTimeout(() => {
     avisoVista.textContent = VISTA_PREVIA
       ? "Vista previa: estás viendo también los borradores, es decir, lo que está oculto y las categorías o tutoriales vacíos. Los visitantes normales no lo ven."
-      : "Para ver la vista previa, primero entra al panel de administración en este mismo navegador y vuelve a abrir esta dirección. Mientras tanto ves la página como cualquier visitante.";
+      : "Ahora ves la página igual que cualquier visitante. Para ver también los borradores, abre antes el panel de administración (admin.html) en este mismo navegador, entra con tu correo y contraseña, y vuelve a abrir esta dirección.";
   }, 600);
 }
 const esVisible = (d) => VISTA_PREVIA || !d.data().oculto;
@@ -143,9 +145,20 @@ const marcaOculto = (d) => (VISTA_PREVIA && d.data().oculto ? " (oculto)" : "");
 // el público pide solo lo no oculto (así lo exigen las reglas); con sesión y vista previa, todo
 async function leerColeccion(nombre) {
   const col = collection(db, nombre);
-  const snap = VISTA_PREVIA
-    ? await getDocs(query(col, orderBy("order", "asc")))
-    : await getDocs(query(col, where("oculto", "==", false)));
+  const publica = () => getDocs(query(col, where("oculto", "==", false)));
+  let snap;
+  if (VISTA_PREVIA) {
+    try {
+      snap = await getDocs(query(col, orderBy("order", "asc")));
+    } catch (err) {
+      // sesión caducada o sin permiso: se cae a lo público en vez de dejar la página vacía
+      console.error("Vista previa sin permiso, se muestra lo público:", err);
+      VISTA_PREVIA = false;
+      snap = await publica();
+    }
+  } else {
+    snap = await publica();
+  }
   return snap.docs.slice().sort((a, b) => (a.data().order || 0) - (b.data().order || 0));
 }
 // tutoriales (con al menos un capítulo visible) y capítulos visibles; en vista previa, todo
