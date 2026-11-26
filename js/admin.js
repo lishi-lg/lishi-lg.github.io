@@ -125,6 +125,7 @@ function empezarEdicion(id, project) {
   document.getElementById("project-description").value = project.description || "";
   document.getElementById("project-link").value = project.link || "";
   document.getElementById("project-order").value = project.order ?? 0;
+  document.getElementById("project-oculto").checked = !!project.oculto;
   document.getElementById("project-image").value = project.imageUrl || "";
   document.getElementById("project-form-title").textContent = "Editar proyecto: " + (project.title || "");
   document.getElementById("project-submit").textContent = "Guardar cambios";
@@ -158,7 +159,8 @@ projectForm.addEventListener("submit", async (e) => {
     description: document.getElementById("project-description").value,
     link: document.getElementById("project-link").value,
     order: Number(document.getElementById("project-order").value) || 0,
-    imageUrl: document.getElementById("project-image").value
+    imageUrl: document.getElementById("project-image").value,
+    oculto: document.getElementById("project-oculto").checked
   };
 
   try {
@@ -197,7 +199,7 @@ async function loadProjectsList() {
     const info = document.createElement("div");
     info.className = "info";
     const title = document.createElement("h3");
-    title.textContent = project.title || "";
+    title.textContent = (project.title || "") + (project.oculto ? " (Oculto)" : "");
     const desc = document.createElement("p");
     pintarTexto(desc, project.description || "", enlacesDelFormulario(), { parrafos: false });
     info.appendChild(title);
@@ -340,15 +342,17 @@ const cargarCategorias = hacerCrud({
     title: document.getElementById("cat-title").value,
     intro: document.getElementById("cat-intro").value,
     aviso: document.getElementById("cat-aviso").value,
-    order: Number(document.getElementById("cat-order").value) || 0
+    order: Number(document.getElementById("cat-order").value) || 0,
+    oculto: document.getElementById("cat-oculto").checked
   }),
   rellenarFormulario: (c) => {
     document.getElementById("cat-title").value = c.title || "";
     document.getElementById("cat-intro").value = c.intro || "";
     document.getElementById("cat-aviso").value = c.aviso || "";
     document.getElementById("cat-order").value = c.order ?? 0;
+    document.getElementById("cat-oculto").checked = !!c.oculto;
   },
-  textoFila: (c) => ({ titulo: c.title || "", detalle: c.aviso ? "Con aviso: " + c.aviso : "" }),
+  textoFila: (c) => ({ titulo: (c.title || "") + (c.oculto ? " (Oculto)" : ""), detalle: c.aviso ? "Con aviso: " + c.aviso : "" }),
   trasGuardar: () => refrescarSelectsTutoriales()
 });
 
@@ -360,16 +364,18 @@ const cargarTutoriales = hacerCrud({
     categoryId: document.getElementById("tut-cat").value,
     title: document.getElementById("tut-title").value,
     description: document.getElementById("tut-desc").value,
-    order: Number(document.getElementById("tut-order").value) || 0
+    order: Number(document.getElementById("tut-order").value) || 0,
+    oculto: document.getElementById("tut-oculto").checked
   }),
   rellenarFormulario: (t) => {
     document.getElementById("tut-cat").value = t.categoryId || "";
     document.getElementById("tut-title").value = t.title || "";
     document.getElementById("tut-desc").value = t.description || "";
     document.getElementById("tut-order").value = t.order ?? 0;
+    document.getElementById("tut-oculto").checked = !!t.oculto;
   },
   textoFila: (t) => ({
-    titulo: t.title || "",
+    titulo: (t.title || "") + (t.oculto ? " (Oculto)" : ""),
     detalle: "Categoría: " + ((cacheCategorias.find((c) => c.id === t.categoryId) || {}).title || "?")
   }),
   trasGuardar: () => refrescarSelectsTutoriales()
@@ -383,16 +389,18 @@ const cargarCapitulos = hacerCrud({
     tutorialId: document.getElementById("cap-tut").value,
     title: document.getElementById("cap-title").value,
     audioUrl: document.getElementById("cap-audio").value,
-    order: Number(document.getElementById("cap-order").value) || 0
+    order: Number(document.getElementById("cap-order").value) || 0,
+    oculto: document.getElementById("cap-oculto").checked
   }),
   rellenarFormulario: (c) => {
     document.getElementById("cap-tut").value = c.tutorialId || "";
     document.getElementById("cap-title").value = c.title || "";
     document.getElementById("cap-audio").value = c.audioUrl || "";
     document.getElementById("cap-order").value = c.order ?? 0;
+    document.getElementById("cap-oculto").checked = !!c.oculto;
   },
   textoFila: (c) => ({
-    titulo: c.title || "",
+    titulo: (c.title || "") + (c.oculto ? " (Oculto)" : ""),
     detalle: "Tutorial: " + ((cacheTutoriales.find((t) => t.id === c.tutorialId) || {}).title || "?")
   })
 });
