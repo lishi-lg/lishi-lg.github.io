@@ -1,4 +1,5 @@
-import { db } from "./firebase-config.js";
+import { db, auth } from "./firebase-config.js";
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
 import { pintarTexto } from "./texto.js";
 import {
   doc,
@@ -6,7 +7,8 @@ import {
   collection,
   query,
   orderBy,
-  getDocs
+  getDocs,
+  where
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 document.getElementById("year").textContent = new Date().getFullYear();
@@ -84,16 +86,17 @@ function createProjectCard(project, links) {
 
 async function loadProjects(links) {
   const grid = document.getElementById("projects-grid");
-  const q = query(collection(db, "projects"), orderBy("order", "asc"));
-  const snap = await getDocs(q);
+  const docsProy = (await leerColeccion("projects")).filter(esVisible);
 
-  if (snap.empty) {
+  if (!docsProy.length) {
     document.getElementById("projects-empty").hidden = false;
     return;
   }
 
-  snap.forEach((docSnap) => {
-    grid.appendChild(createProjectCard(docSnap.data(), links));
+  docsProy.forEach((docSnap) => {
+    const proyecto = docSnap.data();
+    if (VISTA_PREVIA && proyecto.oculto) proyecto.title = (proyecto.title || proyecto.link || "") + " (oculto)";
+    grid.appendChild(createProjectCard(proyecto, links));
   });
 }
 
@@ -117,20 +120,56 @@ function mostrarDescripcionTutorial(id) {
   tutDesc.hidden = !texto;
   pintarTexto(tutDesc, texto, enlacesPerfil, { parrafos: false });
 }
+// Borradores: lo que lleva "oculto" no lo ve el público. Con ?vista=1 y la sesión del panel abierta en este navegador, Leslie lo ve todo.
+const PIDE_VISTA = new URLSearchParams(location.search).has("vista");
+let VISTA_PREVIA = false;
+if (PIDE_VISTA) {
+  VISTA_PREVIA = await new Promise((resolve) => {
+    const dejarDeEscuchar = onAuthStateChanged(auth, (usuario) => { dejarDeEscuchar(); resolve(!!usuario); });
+  });
+  const avisoVista = document.createElement("p");
+  avisoVista.id = "vista-aviso";
+  avisoVista.className = "status-msg";
+  avisoVista.setAttribute("role", "status");
+  document.getElementById("contenido").before(avisoVista);
+  setTimeout(() => {
+    avisoVista.textContent = VISTA_PREVIA
+      ? "Vista previa: estás viendo también los borradores, es decir, lo que está oculto y las categorías o tutoriales vacíos. Los visitantes normales no lo ven."
+      : "Para ver la vista previa, primero entra al panel de administración en este mismo navegador y vuelve a abrir esta dirección. Mientras tanto ves la página como cualquier visitante.";
+  }, 600);
+}
+const esVisible = (d) => VISTA_PREVIA || !d.data().oculto;
+const marcaOculto = (d) => (VISTA_PREVIA && d.data().oculto ? " (oculto)" : "");
+// el público pide solo lo no oculto (así lo exigen las reglas); con sesión y vista previa, todo
+async function leerColeccion(nombre) {
+  const col = collection(db, nombre);
+  const snap = VISTA_PREVIA
+    ? await getDocs(query(col, orderBy("order", "asc")))
+    : await getDocs(query(col, where("oculto", "==", false)));
+  return snap.docs.slice().sort((a, b) => (a.data().order || 0) - (b.data().order || 0));
+}
+// tutoriales (con al menos un capítulo visible) y capítulos visibles; en vista previa, todo
+async function cargarArbol() {
+  const [todosTut, todosCap] = await Promise.all([leerColeccion("tut_tutorials"), leerColeccion("tut_chapters")]);
+  const caps = todosCap.filter(esVisible);
+  const tuts = todosTut.filter(esVisible).filter((t) => VISTA_PREVIA || caps.some((c) => c.data().tutorialId === t.id));
+  return { tuts, caps };
+}
+
 let catActual = null;
 let capitulosPorTutorial = {};
 
 async function loadCategorias() {
   const grid = document.getElementById("tut-grid");
-  const q = query(collection(db, "tut_categories"), orderBy("order", "asc"));
-  const snap = await getDocs(q);
+  const [todasCats, arbol] = await Promise.all([leerColeccion("tut_categories"), cargarArbol()]);
+  const docsCats = todasCats.filter(esVisible).filter((d) => VISTA_PREVIA || arbol.tuts.some((t) => t.data().categoryId === d.id));
 
-  if (snap.empty) {
+  if (!docsCats.length) {
     document.getElementById("tut-empty").hidden = false;
     return;
   }
 
-  snap.forEach((docSnap) => {
+  docsCats.forEach((docSnap) => {
     const c = docSnap.data();
     const card = document.createElement("article");
     card.className = "project-card";
@@ -139,7 +178,7 @@ async function loadCategorias() {
     const title = document.createElement("h3");
     const link = document.createElement("a");
     link.href = "#tutorial/" + docSnap.id;
-    link.textContent = c.title || "";
+    link.textContent = (c.title || "") + marcaOculto(docSnap);
     title.appendChild(link);
     body.appendChild(title);
     if (c.intro) {
@@ -157,7 +196,7 @@ function llenarCapitulos(tutorialId) {
   selCapitulo.replaceChildren(...caps.map((d) => {
     const o = document.createElement("option");
     o.value = d.id;
-    o.textContent = d.data().title || "";
+    o.textContent = (d.data().title || "") + marcaOculto(d);
     return o;
   }));
 }
@@ -167,11 +206,17 @@ async function abrirCategoria(id) {
   tutEstado.textContent = "Cargando…";
   try {
     const snap = await getDoc(doc(db, "tut_categories", id));
-    if (!snap.exists()) {
+    if (!snap.exists() || (!VISTA_PREVIA && snap.data().oculto)) {
       tutEstado.textContent = "No se encontró esta página de tutoriales.";
       return;
     }
     const c = snap.data();
+    const arbol = await cargarArbol();
+    const tutoriales = arbol.tuts.filter((d) => d.data().categoryId === id);
+    if (!VISTA_PREVIA && !tutoriales.length) {
+      tutEstado.textContent = "No se encontró esta página de tutoriales.";
+      return;
+    }
     document.getElementById("cat-titulo").textContent = "Tutoriales de " + (c.title || "");
     document.title = "Tutoriales de " + (c.title || "") + " — " + TITULO_SITIO;
     pintarTexto(document.getElementById("cat-intro"), c.intro || "", enlacesPerfil);
@@ -180,13 +225,8 @@ async function abrirCategoria(id) {
     aviso.textContent = c.aviso || "";
 
     // traigo los tutoriales y los capítulos de una vez (son pocos) y los reparto por tutorial
-    const [snapTut, snapCap] = await Promise.all([
-      getDocs(query(collection(db, "tut_tutorials"), orderBy("order", "asc"))),
-      getDocs(query(collection(db, "tut_chapters"), orderBy("order", "asc")))
-    ]);
-    const tutoriales = snapTut.docs.filter((d) => d.data().categoryId === id);
     capitulosPorTutorial = {};
-    snapCap.docs.forEach((d) => {
+    arbol.caps.forEach((d) => {
       const t = d.data().tutorialId;
       (capitulosPorTutorial[t] = capitulosPorTutorial[t] || []).push(d);
     });
@@ -194,7 +234,7 @@ async function abrirCategoria(id) {
     selTutorial.replaceChildren(...tutoriales.map((d) => {
       const o = document.createElement("option");
       o.value = d.id;
-      o.textContent = d.data().title || "";
+      o.textContent = (d.data().title || "") + marcaOculto(d);
       return o;
     }));
     descripcionesTutorial = {};
@@ -204,6 +244,7 @@ async function abrirCategoria(id) {
     tutEstado.textContent = tutoriales.length ? "" : "Esta página todavía no tiene tutoriales.";
   } catch (err) {
     console.error("Error cargando tutoriales:", err);
+    if (err && err.code === "permission-denied") { tutEstado.textContent = "No se encontró esta página de tutoriales."; return; }
     tutEstado.textContent = "No se pudieron cargar los tutoriales. Inténtalo de nuevo en un rato.";
   }
 }
