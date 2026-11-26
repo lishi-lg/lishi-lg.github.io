@@ -74,6 +74,7 @@
         <input type="url" id="project-link" placeholder="Link del proyecto (opcional)" />
         <input type="number" id="project-order" placeholder="Orden (0, 1, 2...)" value="0" />
         <input type="url" id="project-image" placeholder="Link de la imagen (opcional)" />
+        <label class="check"><input type="checkbox" id="project-oculto" /> Ocultar (borrador: no se ve en la página pública)</label>
         <button type="submit" id="project-submit">Agregar</button>
         <button type="button" id="project-cancel" class="btn-secundario" hidden>Cancelar la edición</button>
       </form>
@@ -93,6 +94,7 @@
         <textarea id="cat-intro" rows="4" placeholder="Texto de presentación de la página" aria-describedby="ayuda-enlaces"></textarea>
         <textarea id="cat-aviso" rows="2" placeholder="Aviso (opcional, ej. la voz de los audios está creada con IA)"></textarea>
         <input type="number" id="cat-order" placeholder="Orden (0, 1, 2...)" value="0" />
+        <label class="check"><input type="checkbox" id="cat-oculto" /> Ocultar (borrador: no se ve en la página pública)</label>
         <button type="submit" id="cat-submit">Agregar</button>
         <button type="button" id="cat-cancel" class="btn-secundario" hidden>Cancelar la edición</button>
       </form>
@@ -108,6 +110,7 @@
         <input type="text" id="tut-title" placeholder="Título (ej. Tutorial para principiantes)" required />
         <textarea id="tut-desc" rows="2" placeholder="Descripción (opcional)" aria-describedby="ayuda-enlaces"></textarea>
         <input type="number" id="tut-order" placeholder="Orden (0, 1, 2...)" value="0" />
+        <label class="check"><input type="checkbox" id="tut-oculto" /> Ocultar (borrador: no se ve en la página pública)</label>
         <button type="submit" id="tut-submit">Agregar</button>
         <button type="button" id="tut-cancel" class="btn-secundario" hidden>Cancelar la edición</button>
       </form>
@@ -123,6 +126,7 @@
         <input type="text" id="cap-title" placeholder="Título (ej. Capítulo 1: Bienvenida a Puerto Bravo)" required />
         <input type="url" id="cap-audio" placeholder="Link del audio (https://...)" required />
         <input type="number" id="cap-order" placeholder="Orden (0, 1, 2...)" value="0" />
+        <label class="check"><input type="checkbox" id="cap-oculto" /> Ocultar (borrador: no se ve en la página pública)</label>
         <button type="submit" id="cap-submit">Agregar</button>
         <button type="button" id="cap-cancel" class="btn-secundario" hidden>Cancelar la edición</button>
       </form>
