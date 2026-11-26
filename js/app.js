@@ -105,6 +105,18 @@ const selTutorial = document.getElementById("sel-tutorial");
 const selCapitulo = document.getElementById("sel-capitulo");
 const player = document.getElementById("tut-player");
 const tutEstado = document.getElementById("tut-estado");
+// descripción del tutorial elegido: sale justo debajo del cuadro "¿Qué tutorial?" y el lector la anuncia al cambiar
+const tutDesc = document.createElement("p");
+tutDesc.id = "tut-desc";
+tutDesc.setAttribute("aria-live", "polite");
+tutDesc.hidden = true;
+selTutorial.after(tutDesc);
+let descripcionesTutorial = {};
+function mostrarDescripcionTutorial(id) {
+  const texto = descripcionesTutorial[id] || "";
+  tutDesc.hidden = !texto;
+  pintarTexto(tutDesc, texto, enlacesPerfil, { parrafos: false });
+}
 let catActual = null;
 let capitulosPorTutorial = {};
 
@@ -185,6 +197,9 @@ async function abrirCategoria(id) {
       o.textContent = d.data().title || "";
       return o;
     }));
+    descripcionesTutorial = {};
+    tutoriales.forEach((d) => { descripcionesTutorial[d.id] = d.data().description || ""; });
+    mostrarDescripcionTutorial(selTutorial.value);
     llenarCapitulos(selTutorial.value);
     tutEstado.textContent = tutoriales.length ? "" : "Esta página todavía no tiene tutoriales.";
   } catch (err) {
@@ -193,7 +208,10 @@ async function abrirCategoria(id) {
   }
 }
 
-selTutorial.addEventListener("change", () => llenarCapitulos(selTutorial.value));
+selTutorial.addEventListener("change", () => {
+  mostrarDescripcionTutorial(selTutorial.value);
+  llenarCapitulos(selTutorial.value);
+});
 
 // El botón Ir (o Enter en el formulario) carga el capítulo elegido en el reproductor
 document.getElementById("tut-form").addEventListener("submit", (e) => {
