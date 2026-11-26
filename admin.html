@@ -28,7 +28,7 @@
     <div class="admin-block">
       <h2>Perfil</h2>
       <div id="ayuda-enlaces" class="ayuda">
-        <p>Puedes poner enlaces dentro de la frase de bienvenida, del texto "Sobre mí" y de la descripción de los proyectos. Escribe entre corchetes la palabra que se verá y, justo detrás, entre paréntesis, a dónde lleva:</p>
+        <p>Puedes poner enlaces dentro de la frase de bienvenida, del texto "Sobre mí", de la descripción de los proyectos y de los textos de los tutoriales. Escribe entre corchetes la palabra que se verá y, justo detrás, entre paréntesis, a dónde lleva:</p>
         <ul>
           <li><code>haz clic [aquí](github)</code>: "aquí" lleva a tu GitHub.</li>
           <li><code>envíame un [email](correo)</code>: "email" abre un correo para ti.</li>
@@ -70,7 +70,7 @@
       <h2 id="project-form-title">Agregar proyecto</h2>
       <form id="project-form">
         <input type="text" id="project-title" placeholder="Título" required />
-        <textarea id="project-description" placeholder="Descripción" rows="2" required></textarea>
+        <textarea id="project-description" placeholder="Descripción" rows="2" required aria-describedby="ayuda-enlaces"></textarea>
         <input type="url" id="project-link" placeholder="Link del proyecto (opcional)" />
         <input type="number" id="project-order" placeholder="Orden (0, 1, 2...)" value="0" />
         <input type="url" id="project-image" placeholder="Link de la imagen (opcional)" />
@@ -83,6 +83,51 @@
     <div class="admin-block">
       <h2>Proyectos existentes</h2>
       <div id="admin-projects-list" class="admin-projects-list"></div>
+    </div>
+
+    <div class="admin-block">
+      <h2 id="cat-form-title">Agregar categoría de tutoriales</h2>
+      <p class="ayuda">Una categoría es una página de tutoriales, por ejemplo "Puerto Bravo" o "Editor de mods". Su texto de presentación admite enlaces igual que el "Sobre mí": <code>[servidor](https://xebolax.synology.me/PuertoBravo/)</code> convierte la palabra "servidor" en un enlace.</p>
+      <form id="cat-form">
+        <input type="text" id="cat-title" placeholder="Nombre (ej. Puerto Bravo)" required />
+        <textarea id="cat-intro" rows="4" placeholder="Texto de presentación de la página" aria-describedby="ayuda-enlaces"></textarea>
+        <textarea id="cat-aviso" rows="2" placeholder="Aviso (opcional, ej. la voz de los audios está creada con IA)"></textarea>
+        <input type="number" id="cat-order" placeholder="Orden (0, 1, 2...)" value="0" />
+        <button type="submit" id="cat-submit">Agregar</button>
+        <button type="button" id="cat-cancel" class="btn-secundario" hidden>Cancelar la edición</button>
+      </form>
+      <p id="cat-status" class="status-msg" role="status"></p>
+      <div id="admin-cat-list" class="admin-projects-list"></div>
+    </div>
+
+    <div class="admin-block">
+      <h2 id="tut-form-title">Agregar tutorial</h2>
+      <p class="ayuda">Un tutorial vive dentro de una categoría y es lo que sale en el primer cuadro combinado ("¿Qué tutorial?").</p>
+      <form id="tut-admin-form">
+        <select id="tut-cat" required aria-label="Categoría del tutorial"></select>
+        <input type="text" id="tut-title" placeholder="Título (ej. Tutorial para principiantes)" required />
+        <textarea id="tut-desc" rows="2" placeholder="Descripción (opcional)" aria-describedby="ayuda-enlaces"></textarea>
+        <input type="number" id="tut-order" placeholder="Orden (0, 1, 2...)" value="0" />
+        <button type="submit" id="tut-submit">Agregar</button>
+        <button type="button" id="tut-cancel" class="btn-secundario" hidden>Cancelar la edición</button>
+      </form>
+      <p id="tut-status" class="status-msg" role="status"></p>
+      <div id="admin-tut-list" class="admin-projects-list"></div>
+    </div>
+
+    <div class="admin-block">
+      <h2 id="cap-form-title">Agregar capítulo</h2>
+      <p class="ayuda">Un capítulo es un audio de un tutorial: sale en el segundo cuadro combinado ("¿Qué capítulo?"). Si un tutorial tiene un solo capítulo, el cuadro muestra solo ese.</p>
+      <form id="cap-form">
+        <select id="cap-tut" required aria-label="Tutorial del capítulo"></select>
+        <input type="text" id="cap-title" placeholder="Título (ej. Capítulo 1: Bienvenida a Puerto Bravo)" required />
+        <input type="url" id="cap-audio" placeholder="Link del audio (https://...)" required />
+        <input type="number" id="cap-order" placeholder="Orden (0, 1, 2...)" value="0" />
+        <button type="submit" id="cap-submit">Agregar</button>
+        <button type="button" id="cap-cancel" class="btn-secundario" hidden>Cancelar la edición</button>
+      </form>
+      <p id="cap-status" class="status-msg" role="status"></p>
+      <div id="admin-cap-list" class="admin-projects-list"></div>
     </div>
   </section>
 
