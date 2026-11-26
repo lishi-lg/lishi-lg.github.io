@@ -16,6 +16,7 @@
       <ul id="menu-lista" class="menu" hidden>
         <li><a href="#inicio">Inicio</a></li>
         <li><a href="#proyectos">Mis proyectos</a></li>
+        <li><a href="#tutoriales">Mis tutoriales</a></li>
         <li><a href="#sobre-mi">Sobre mí</a></li>
       </ul>
     </nav>
@@ -32,6 +33,28 @@
       <h2 id="proyectos-titulo" tabindex="-1">Mis proyectos</h2>
       <div id="projects-grid" class="projects-grid"></div>
       <p id="projects-empty" class="empty-msg" hidden>Todavía no hay proyectos publicados.</p>
+    </section>
+
+    <section id="tutoriales" class="section vista" aria-labelledby="tut-titulo" hidden>
+      <h2 id="tut-titulo" tabindex="-1">Mis tutoriales</h2>
+      <div id="tut-grid" class="projects-grid"></div>
+      <p id="tut-empty" class="empty-msg" hidden>Todavía no hay tutoriales publicados.</p>
+    </section>
+
+    <section id="tutorial" class="section vista" aria-labelledby="cat-titulo" hidden>
+      <p class="miga"><a href="#tutoriales">Mis tutoriales</a></p>
+      <h2 id="cat-titulo" tabindex="-1"></h2>
+      <div id="cat-intro" class="bio"></div>
+      <p id="cat-aviso" class="aviso" hidden></p>
+      <form id="tut-form">
+        <label for="sel-tutorial">¿Qué tutorial?</label>
+        <select id="sel-tutorial"></select>
+        <label for="sel-capitulo">¿Qué capítulo?</label>
+        <select id="sel-capitulo"></select>
+        <button type="submit" id="btn-ir">Ir</button>
+      </form>
+      <p id="tut-estado" role="status" class="status-msg"></p>
+      <audio id="tut-player" controls preload="none"></audio>
     </section>
 
     <section id="sobre-mi" class="section vista" aria-labelledby="sobre-mi-titulo" hidden>
