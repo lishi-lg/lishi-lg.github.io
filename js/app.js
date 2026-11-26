@@ -11,6 +11,9 @@ import {
 
 document.getElementById("year").textContent = new Date().getFullYear();
 
+// Los enlaces del perfil (github, correo...) también sirven en los textos de los tutoriales
+let enlacesPerfil = {};
+
 async function loadProfile() {
   const snap = await getDoc(doc(db, "profile", "info"));
   if (!snap.exists()) return {};
@@ -18,6 +21,7 @@ async function loadProfile() {
   const data = snap.data();
   if (data.name) document.getElementById("profile-name").textContent = data.name;
   const links = data.links || {};
+  enlacesPerfil = links;
   // la frase de bienvenida y el "Sobre mí" pueden llevar enlaces dentro del texto
   const enFrase = pintarTexto(document.getElementById("profile-tagline"), data.tagline || "", links, { parrafos: false });
   const enBio = pintarTexto(document.getElementById("profile-bio"), data.bio || "", links);
@@ -93,14 +97,131 @@ async function loadProjects(links) {
   });
 }
 
-// primero el perfil, porque los textos de los proyectos pueden usar sus enlaces (github, correo...)
+// ================== TUTORIALES ==================
+// Modelo: categorías (tut_categories) > tutoriales (tut_tutorials) > capítulos (tut_chapters).
+// La página de una categoría lleva dos cuadros combinados y UN reproductor:
+// eliges tutorial, eliges capítulo, y con el botón Ir (o Enter) se carga el audio bajo demanda.
+const selTutorial = document.getElementById("sel-tutorial");
+const selCapitulo = document.getElementById("sel-capitulo");
+const player = document.getElementById("tut-player");
+const tutEstado = document.getElementById("tut-estado");
+let catActual = null;
+let capitulosPorTutorial = {};
+
+async function loadCategorias() {
+  const grid = document.getElementById("tut-grid");
+  const q = query(collection(db, "tut_categories"), orderBy("order", "asc"));
+  const snap = await getDocs(q);
+
+  if (snap.empty) {
+    document.getElementById("tut-empty").hidden = false;
+    return;
+  }
+
+  snap.forEach((docSnap) => {
+    const c = docSnap.data();
+    const card = document.createElement("article");
+    card.className = "project-card";
+    const body = document.createElement("div");
+    body.className = "project-card-body";
+    const title = document.createElement("h3");
+    const link = document.createElement("a");
+    link.href = "#tutorial/" + docSnap.id;
+    link.textContent = c.title || "";
+    title.appendChild(link);
+    body.appendChild(title);
+    if (c.intro) {
+      const desc = document.createElement("p");
+      pintarTexto(desc, c.intro, enlacesPerfil, { parrafos: false });
+      body.appendChild(desc);
+    }
+    card.appendChild(body);
+    grid.appendChild(card);
+  });
+}
+
+function llenarCapitulos(tutorialId) {
+  const caps = capitulosPorTutorial[tutorialId] || [];
+  selCapitulo.replaceChildren(...caps.map((d) => {
+    const o = document.createElement("option");
+    o.value = d.id;
+    o.textContent = d.data().title || "";
+    return o;
+  }));
+}
+
+async function abrirCategoria(id) {
+  catActual = id;
+  tutEstado.textContent = "Cargando…";
+  try {
+    const snap = await getDoc(doc(db, "tut_categories", id));
+    if (!snap.exists()) {
+      tutEstado.textContent = "No se encontró esta página de tutoriales.";
+      return;
+    }
+    const c = snap.data();
+    document.getElementById("cat-titulo").textContent = "Tutoriales de " + (c.title || "");
+    document.title = "Tutoriales de " + (c.title || "") + " — " + TITULO_SITIO;
+    pintarTexto(document.getElementById("cat-intro"), c.intro || "", enlacesPerfil);
+    const aviso = document.getElementById("cat-aviso");
+    aviso.hidden = !c.aviso;
+    aviso.textContent = c.aviso || "";
+
+    // traigo los tutoriales y los capítulos de una vez (son pocos) y los reparto por tutorial
+    const [snapTut, snapCap] = await Promise.all([
+      getDocs(query(collection(db, "tut_tutorials"), orderBy("order", "asc"))),
+      getDocs(query(collection(db, "tut_chapters"), orderBy("order", "asc")))
+    ]);
+    const tutoriales = snapTut.docs.filter((d) => d.data().categoryId === id);
+    capitulosPorTutorial = {};
+    snapCap.docs.forEach((d) => {
+      const t = d.data().tutorialId;
+      (capitulosPorTutorial[t] = capitulosPorTutorial[t] || []).push(d);
+    });
+
+    selTutorial.replaceChildren(...tutoriales.map((d) => {
+      const o = document.createElement("option");
+      o.value = d.id;
+      o.textContent = d.data().title || "";
+      return o;
+    }));
+    llenarCapitulos(selTutorial.value);
+    tutEstado.textContent = tutoriales.length ? "" : "Esta página todavía no tiene tutoriales.";
+  } catch (err) {
+    console.error("Error cargando tutoriales:", err);
+    tutEstado.textContent = "No se pudieron cargar los tutoriales. Inténtalo de nuevo en un rato.";
+  }
+}
+
+selTutorial.addEventListener("change", () => llenarCapitulos(selTutorial.value));
+
+// El botón Ir (o Enter en el formulario) carga el capítulo elegido en el reproductor
+document.getElementById("tut-form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  const opt = selCapitulo.selectedOptions[0];
+  const cap = opt && (capitulosPorTutorial[selTutorial.value] || []).find((d) => d.id === opt.value);
+  if (!cap || !cap.data().audioUrl) {
+    tutEstado.textContent = "Este capítulo todavía no tiene audio. Elige otro o vuelve en unos días.";
+    return;
+  }
+  player.src = cap.data().audioUrl;
+  player.load();
+  tutEstado.textContent = "Capítulo cargado: " + (cap.data().title || "") + ". Dale a reproducir en el reproductor.";
+  player.focus();
+});
+
+// ================== CARGA INICIAL ==================
+// primero el perfil, porque los textos de proyectos y tutoriales pueden usar sus enlaces (github, correo...)
 loadProfile()
   .catch((err) => { console.error("Error cargando perfil:", err); return {}; })
-  .then((links) => loadProjects(links))
-  .catch((err) => console.error("Error cargando proyectos:", err));
+  .then((links) => Promise.all([
+    loadProjects(links).catch((err) => console.error("Error cargando proyectos:", err)),
+    loadCategorias().catch((err) => console.error("Error cargando tutoriales:", err))
+  ]))
+  .catch((err) => console.error(err));
 
 // ================== MENÚ Y SECCIONES ==================
-// Solo se ve una sección a la vez: la portada, Mis proyectos o Sobre mí.
+// Solo se ve una sección a la vez: portada, Mis proyectos, Mis tutoriales, una página de tutoriales o Sobre mí.
 const menuBtn = document.getElementById("menu-btn");
 const menuLista = document.getElementById("menu-lista");
 const vistas = [...document.querySelectorAll(".vista")];
@@ -129,17 +250,26 @@ document.addEventListener("click", (e) => {
 });
 
 function mostrarVista(moverFoco) {
-  const id = location.hash.slice(1);
-  const vista = vistas.find((v) => v.id === id) || vistas[0];
+  // la página de una categoría de tutoriales usa la dirección #tutorial/<su id>
+  const partes = location.hash.slice(1).split("/");
+  const id = partes[0];
+  const param = partes[1] || "";
+  let vista = vistas.find((v) => v.id === id) || vistas[0];
+  if (vista.id === "tutorial" && !param) vista = document.getElementById("tutoriales");
   vistas.forEach((v) => (v.hidden = v !== vista));
   menuLista.querySelectorAll("a").forEach((a) => {
-    if (a.getAttribute("href") === "#" + vista.id) a.setAttribute("aria-current", "page");
+    const destino = a.getAttribute("href") === "#" + vista.id ||
+      (vista.id === "tutorial" && a.getAttribute("href") === "#tutoriales");
+    if (destino) a.setAttribute("aria-current", "page");
     else a.removeAttribute("aria-current");
   });
   const titulo = vista.querySelector("h1, h2");
-  document.title = vista === vistas[0] ? TITULO_SITIO : titulo.textContent + " — " + TITULO_SITIO;
+  if (vista.id !== "tutorial") {
+    document.title = vista === vistas[0] ? TITULO_SITIO : titulo.textContent + " — " + TITULO_SITIO;
+  }
   abrirMenu(false);
   window.scrollTo(0, 0);
+  if (vista.id === "tutorial" && param && param !== catActual) abrirCategoria(param);
   // al cambiar de sección, el lector empieza a leer desde su título
   if (moverFoco) titulo.focus();
 }
