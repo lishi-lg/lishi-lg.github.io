@@ -447,3 +447,126 @@ async function cargarSeccionTutoriales() {
 const _onAuthTutoriales = onAuthStateChanged(auth, (user) => {
   if (user) cargarSeccionTutoriales().catch((err) => console.error("Error cargando tutoriales:", err));
 });
+
+
+// ================== OPINIONES DE LOS TUTORIALES (colección tut_feedback) ==================
+// Solo se leen aquí, con la sesión abierta. Las reglas de Firestore no dejan leer ni borrar a nadie más.
+let fbDocs = [];
+let fbCapitulos = [];
+
+function fbFecha(ts) {
+  const d = ts && typeof ts.toDate === "function" ? ts.toDate() : null;
+  return d ? d.toLocaleString("es-ES", { dateStyle: "long", timeStyle: "short" }) : "sin fecha";
+}
+
+function fbTituloCapitulo(id) {
+  const c = fbCapitulos.find((x) => x.id === id);
+  if (!c) return "Capítulo que ya no existe";
+  const t = cacheTutoriales.find((x) => x.id === c.tutorialId);
+  return (t ? t.title + " — " : "") + (c.title || "");
+}
+
+function fbPintar() {
+  const filtro = document.getElementById("fb-filtro").value;
+  const lista = fbDocs.filter((d) => !filtro || d.chapterId === filtro);
+
+  const resumenGeneral = document.getElementById("fb-resumen-general");
+  const media = (arr) => (arr.length ? (arr.reduce((s, d) => s + d.stars, 0) / arr.length).toFixed(1).replace(".", ",") : "sin datos");
+  resumenGeneral.textContent = lista.length
+    ? lista.length + (lista.length === 1 ? " opinión" : " opiniones") + ", media " + media(lista) + " de 5, " + lista.filter((d) => d.comment).length + " con comentario."
+    : "Todavía no hay opiniones.";
+
+  const porCap = {};
+  fbDocs.forEach((d) => { (porCap[d.chapterId] = porCap[d.chapterId] || []).push(d); });
+  const cuerpo = document.querySelector("#fb-tabla tbody");
+  cuerpo.replaceChildren(...Object.keys(porCap).map((id) => {
+    const arr = porCap[id];
+    const tr = document.createElement("tr");
+    const celdas = [fbTituloCapitulo(id), String(arr.length), media(arr), ...[5, 4, 3, 2, 1].map((n) => String(arr.filter((d) => d.stars === n).length))];
+    celdas.forEach((txt, i) => {
+      const td = document.createElement(i === 0 ? "th" : "td");
+      if (i === 0) td.scope = "row";
+      td.textContent = txt;
+      tr.appendChild(td);
+    });
+    return tr;
+  }));
+  document.getElementById("fb-tabla").hidden = !fbDocs.length;
+
+  const ul = document.getElementById("fb-lista");
+  ul.replaceChildren(...lista.map((d) => {
+    const li = document.createElement("li");
+    li.className = "fb-item";
+    const cab = document.createElement("p");
+    cab.textContent = d.stars + (d.stars === 1 ? " estrella" : " estrellas") + ". " + fbTituloCapitulo(d.chapterId) + ". " + fbFecha(d.createdAt);
+    li.appendChild(cab);
+    const cuerpoTxt = document.createElement("p");
+    cuerpoTxt.textContent = d.comment || "Sin comentario.";
+    li.appendChild(cuerpoTxt);
+    const borrar = document.createElement("button");
+    borrar.type = "button";
+    borrar.className = "btn-eliminar";
+    borrar.textContent = "Eliminar";
+    borrar.setAttribute("aria-label", "Eliminar la opinión de " + d.stars + (d.stars === 1 ? " estrella" : " estrellas") + " del " + fbFecha(d.createdAt));
+    borrar.addEventListener("click", async () => {
+      if (!confirm("¿Eliminar esta opinión?")) return;
+      const estado = document.getElementById("fb-admin-status");
+      try {
+        await deleteDoc(doc(db, "tut_feedback", d.id));
+        fbDocs = fbDocs.filter((x) => x.id !== d.id);
+        fbPintar();
+        estado.textContent = "Opinión eliminada.";
+        document.getElementById("fb-lista-titulo").focus();
+      } catch (err) {
+        console.error(err);
+        estado.textContent = "No se pudo eliminar. Inténtalo de nuevo.";
+      }
+    });
+    li.appendChild(borrar);
+    return li;
+  }));
+  document.getElementById("fb-lista-titulo").tabIndex = -1;
+}
+
+async function cargarOpiniones() {
+  const estado = document.getElementById("fb-admin-status");
+  estado.textContent = "Cargando opiniones…";
+  try {
+    const [snapFb, snapCap] = await Promise.all([
+      getDocs(query(collection(db, "tut_feedback"), orderBy("createdAt", "desc"))),
+      getDocs(collection(db, "tut_chapters"))
+    ]);
+    fbDocs = snapFb.docs.map((d) => ({ id: d.id, ...d.data() }));
+    fbCapitulos = snapCap.docs.map((d) => ({ id: d.id, ...d.data() }));
+    const sel = document.getElementById("fb-filtro");
+    const previo = sel.value;
+    const ids = [...new Set(fbDocs.map((d) => d.chapterId))];
+    const todos = document.createElement("option");
+    todos.value = "";
+    todos.textContent = "Todos los capítulos";
+    sel.replaceChildren(todos, ...ids.map((id) => {
+      const o = document.createElement("option");
+      o.value = id;
+      o.textContent = fbTituloCapitulo(id);
+      return o;
+    }));
+    sel.value = ids.includes(previo) ? previo : "";
+    fbPintar();
+    estado.textContent = "Opiniones cargadas.";
+  } catch (err) {
+    console.error("Error cargando opiniones:", err);
+    estado.textContent = err && err.code === "permission-denied"
+      ? "No tienes permiso para leer las opiniones: faltan las reglas de Firestore de tut_feedback."
+      : "No se pudieron cargar las opiniones.";
+  }
+}
+
+document.getElementById("fb-filtro").addEventListener("change", fbPintar);
+document.getElementById("fb-actualizar").addEventListener("click", cargarOpiniones);
+
+onAuthStateChanged(auth, async (user) => {
+  if (!user) return;
+  // espera a que el panel haya cargado los tutoriales para poder nombrar los capítulos
+  try { await refrescarSelectsTutoriales(); } catch (_) { /* el resumen usará solo el título del capítulo */ }
+  cargarOpiniones();
+});
