@@ -8,7 +8,9 @@ import {
   query,
   orderBy,
   getDocs,
-  where
+  where,
+  addDoc,
+  serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 document.getElementById("year").textContent = new Date().getFullYear();
@@ -216,6 +218,7 @@ function llenarCapitulos(tutorialId) {
 
 async function abrirCategoria(id) {
   catActual = id;
+  ocultarOpinion();
   tutEstado.textContent = "Cargando…";
   try {
     const snap = await getDoc(doc(db, "tut_categories", id));
@@ -279,7 +282,79 @@ document.getElementById("tut-form").addEventListener("submit", (e) => {
   player.src = cap.data().audioUrl;
   player.load();
   tutEstado.textContent = "Capítulo cargado: " + (cap.data().title || "") + ". Dale a reproducir en el reproductor.";
+  prepararOpinion(cap);
   player.focus();
+});
+
+// ================== OPINIÓN: ESTRELLAS Y COMENTARIO ==================
+// Se guarda en la colección tut_feedback (solo se puede escribir; la lee únicamente el panel de Leslie).
+// Freno de spam: casilla trampa, 30 s entre envíos desde este navegador y tope de 500 caracteres.
+const fbForm = document.getElementById("fb-form");
+const fbTitulo = document.getElementById("fb-titulo");
+const fbEstado = document.getElementById("fb-estado");
+const fbEnviar = document.getElementById("fb-enviar");
+const fbComentario = document.getElementById("fb-comentario");
+const FB_ESPERA_MS = 30000;
+let fbCapitulo = null; // { id, tutorialId, titulo } del capítulo cargado en el reproductor
+
+function prepararOpinion(cap) {
+  const d = cap.data();
+  // en la vista previa un borrador no se puede valorar: la regla solo admite capítulos visibles
+  if (d.oculto) { fbForm.hidden = true; fbCapitulo = null; return; }
+  fbCapitulo = { id: cap.id, tutorialId: d.tutorialId || "", titulo: d.title || "" };
+  fbForm.reset();
+  fbEstado.textContent = "";
+  fbTitulo.textContent = "Tu opinión sobre: " + fbCapitulo.titulo;
+  fbForm.hidden = false;
+}
+
+function ocultarOpinion() {
+  fbCapitulo = null;
+  fbForm.hidden = true;
+  fbEstado.textContent = "";
+}
+
+fbForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  if (!fbCapitulo) return;
+  const marcada = fbForm.querySelector('input[name="fb-estrellas"]:checked');
+  if (!marcada) {
+    fbEstado.textContent = "Elige de 1 a 5 estrellas antes de enviar.";
+    fbForm.querySelector('input[name="fb-estrellas"]').focus();
+    return;
+  }
+  // casilla trampa: un bot la rellena; se responde como si fuera bien y no se guarda nada
+  if (document.getElementById("fb-web").value) {
+    fbEstado.textContent = "Gracias, tu opinión se ha enviado.";
+    fbForm.reset();
+    return;
+  }
+  let ultimo = 0;
+  try { ultimo = Number(localStorage.getItem("fb_ultimo")) || 0; } catch (_) { /* sin almacenamiento: no hay límite local */ }
+  const faltan = Math.ceil((ultimo + FB_ESPERA_MS - Date.now()) / 1000);
+  if (faltan > 0) {
+    fbEstado.textContent = "Espera " + faltan + " segundos antes de enviar otra opinión.";
+    return;
+  }
+  fbEnviar.disabled = true;
+  fbEstado.textContent = "Enviando…";
+  try {
+    await addDoc(collection(db, "tut_feedback"), {
+      chapterId: fbCapitulo.id,
+      tutorialId: fbCapitulo.tutorialId,
+      stars: Number(marcada.value),
+      comment: fbComentario.value.trim().slice(0, 500),
+      createdAt: serverTimestamp()
+    });
+    try { localStorage.setItem("fb_ultimo", String(Date.now())); } catch (_) { /* nada */ }
+    fbForm.reset();
+    fbEstado.textContent = "Gracias, tu opinión se ha enviado.";
+  } catch (err) {
+    console.error("Error enviando la opinión:", err);
+    fbEstado.textContent = "No se pudo enviar ahora. Inténtalo de nuevo en un rato.";
+  } finally {
+    fbEnviar.disabled = false;
+  }
 });
 
 // ================== CARGA INICIAL ==================
