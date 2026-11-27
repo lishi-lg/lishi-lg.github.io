@@ -133,6 +133,36 @@
       <p id="cap-status" class="status-msg" role="status"></p>
       <div id="admin-cap-list" class="admin-projects-list"></div>
     </div>
+
+    <div class="admin-block">
+      <h2 id="fb-admin-titulo" tabindex="-1">Opiniones de los tutoriales</h2>
+      <p class="ayuda">Estrellas y comentarios que deja la gente bajo cada audio. Solo se ven aquí.</p>
+      <div>
+        <label for="fb-filtro">Ver las opiniones de</label>
+        <select id="fb-filtro"></select>
+        <button type="button" id="fb-actualizar">Actualizar</button>
+      </div>
+      <p id="fb-admin-status" class="status-msg" role="status"></p>
+      <p id="fb-resumen-general"></p>
+      <table id="fb-tabla" class="fb-tabla">
+        <caption>Resumen por capítulo</caption>
+        <thead>
+          <tr>
+            <th scope="col">Capítulo</th>
+            <th scope="col">Opiniones</th>
+            <th scope="col">Media</th>
+            <th scope="col">5 estrellas</th>
+            <th scope="col">4</th>
+            <th scope="col">3</th>
+            <th scope="col">2</th>
+            <th scope="col">1</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <h3 id="fb-lista-titulo">Comentarios</h3>
+      <ul id="fb-lista" class="fb-lista" aria-labelledby="fb-lista-titulo"></ul>
+    </div>
   </section>
 
   <script type="module" src="js/admin.js"></script>
