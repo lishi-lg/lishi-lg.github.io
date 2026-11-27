@@ -55,6 +55,26 @@
       </form>
       <p id="tut-estado" role="status" class="status-msg"></p>
       <audio id="tut-player" controls preload="none"></audio>
+
+      <form id="fb-form" class="fb-form" novalidate hidden>
+        <h3 id="fb-titulo" tabindex="-1">Tu opinión sobre este capítulo</h3>
+        <p class="fb-ayuda">Solo la leo yo. No te pido nombre ni correo.</p>
+        <fieldset class="fb-estrellas">
+          <legend>Valoración de 1 a 5 estrellas</legend>
+          <label><input type="radio" name="fb-estrellas" value="1" /> 1 estrella, mala</label>
+          <label><input type="radio" name="fb-estrellas" value="2" /> 2 estrellas, regular</label>
+          <label><input type="radio" name="fb-estrellas" value="3" /> 3 estrellas, bien</label>
+          <label><input type="radio" name="fb-estrellas" value="4" /> 4 estrellas, muy bien</label>
+          <label><input type="radio" name="fb-estrellas" value="5" /> 5 estrellas, excelente</label>
+        </fieldset>
+        <label for="fb-comentario">Comentario (opcional, hasta 500 caracteres)</label>
+        <textarea id="fb-comentario" rows="4" maxlength="500"></textarea>
+        <div class="fb-trampa" aria-hidden="true">
+          <label>No rellenes este campo <input type="text" id="fb-web" tabindex="-1" autocomplete="off" /></label>
+        </div>
+        <button type="submit" id="fb-enviar">Enviar opinión</button>
+        <p id="fb-estado" role="status" class="status-msg"></p>
+      </form>
     </section>
 
     <section id="sobre-mi" class="section vista" aria-labelledby="sobre-mi-titulo" hidden>
