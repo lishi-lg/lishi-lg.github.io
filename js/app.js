@@ -10,7 +10,9 @@ import {
   getDocs,
   where,
   addDoc,
-  serverTimestamp
+  serverTimestamp,
+  setDoc,
+  increment
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
 document.getElementById("year").textContent = new Date().getFullYear();
@@ -396,6 +398,29 @@ document.addEventListener("click", (e) => {
   if (!menuLista.hidden && !e.target.closest(".nav")) abrirMenu(false);
 });
 
+// ================== CONTADOR DE VISITAS ==================
+// Suma 1 por sección y por día en la colección page_views. Una vez por sesión de pestaña y sección.
+// No cuenta si hay sesión del panel abierta ni en vista previa. Solo Leslie puede leerlo (en admin.html).
+async function contarVisita(clave, nombre) {
+  try {
+    if (VISTA_PREVIA) return;
+    await auth.authStateReady();
+    if (auth.currentUser) return;
+    const marca = "visita:" + clave;
+    if (sessionStorage.getItem(marca)) return;
+    sessionStorage.setItem(marca, "1");
+    const dia = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Lima" }).format(new Date());
+    await setDoc(doc(db, "page_views", clave), {
+      nombre: String(nombre).slice(0, 80),
+      total: increment(1),
+      dias: { [dia]: increment(1) },
+      ultima: serverTimestamp()
+    }, { merge: true });
+  } catch (err) {
+    console.warn("No se pudo contar la visita:", err);
+  }
+}
+
 function mostrarVista(moverFoco) {
   // la página de una categoría de tutoriales usa la dirección #tutorial/<su id>
   const partes = location.hash.slice(1).split("/");
@@ -417,6 +442,8 @@ function mostrarVista(moverFoco) {
   abrirMenu(false);
   window.scrollTo(0, 0);
   if (vista.id === "tutorial" && param && param !== catActual) abrirCategoria(param);
+  if (vista.id === "tutorial") contarVisita("tut-" + param.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 60), "Categoría " + param);
+  else contarVisita(vista.id, titulo.textContent);
   // al cambiar de sección, el lector empieza a leer desde su título
   if (moverFoco) titulo.focus();
 }
