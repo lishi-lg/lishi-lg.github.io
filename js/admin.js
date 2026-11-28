@@ -570,3 +570,71 @@ onAuthStateChanged(auth, async (user) => {
   try { await refrescarSelectsTutoriales(); } catch (_) { /* el resumen usará solo el título del capítulo */ }
   cargarOpiniones();
 });
+
+// ================== VISITAS ==================
+const NOMBRES_VISTAS = { inicio: "Inicio", proyectos: "Mis proyectos", tutoriales: "Mis tutoriales", "sobre-mi": "Sobre mí" };
+
+function diaLima(desplazamiento) {
+  const f = new Date(Date.now() - desplazamiento * 86400000);
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Lima" }).format(f);
+}
+
+async function cargarVisitas() {
+  const estado = document.getElementById("vis-status");
+  estado.textContent = "Cargando visitas…";
+  try {
+    const snap = await getDocs(collection(db, "page_views"));
+    const ultimos7 = [0, 1, 2, 3, 4, 5, 6].map(diaLima);
+    const ultimos14 = [...Array(14).keys()].map(diaLima);
+    const hoy = ultimos7[0];
+    const filas = snap.docs.map((d) => {
+      const x = d.data();
+      const dias = x.dias || {};
+      return {
+        id: d.id,
+        nombre: NOMBRES_VISTAS[d.id] || x.nombre || d.id,
+        hoy: dias[hoy] || 0,
+        sem: ultimos7.reduce((a, k) => a + (dias[k] || 0), 0),
+        total: x.total || 0,
+        dias
+      };
+    }).sort((a, b) => b.total - a.total);
+    const cuerpo = document.querySelector("#vis-tabla tbody");
+    cuerpo.textContent = "";
+    filas.forEach((f) => {
+      const tr = document.createElement("tr");
+      const th = document.createElement("th");
+      th.scope = "row";
+      th.textContent = f.nombre;
+      tr.append(th);
+      [f.hoy, f.sem, f.total].forEach((v) => {
+        const td = document.createElement("td");
+        td.textContent = String(v);
+        tr.append(td);
+      });
+      cuerpo.append(tr);
+    });
+    const cuerpoDias = document.querySelector("#vis-dias tbody");
+    cuerpoDias.textContent = "";
+    ultimos14.forEach((k) => {
+      const tr = document.createElement("tr");
+      const th = document.createElement("th");
+      th.scope = "row";
+      th.textContent = k;
+      const td = document.createElement("td");
+      td.textContent = String(filas.reduce((a, f) => a + (f.dias[k] || 0), 0));
+      tr.append(th, td);
+      cuerpoDias.append(tr);
+    });
+    document.getElementById("vis-tabla").hidden = !filas.length;
+    estado.textContent = filas.length
+      ? "Visitas cargadas: " + filas.length + " secciones con visitas."
+      : "Todavía no hay visitas registradas.";
+  } catch (err) {
+    console.error(err);
+    estado.textContent = "No se pudieron cargar las visitas.";
+  }
+}
+
+document.getElementById("vis-actualizar").addEventListener("click", cargarVisitas);
+onAuthStateChanged(auth, (user) => { if (user) cargarVisitas(); });
