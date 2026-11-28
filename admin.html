@@ -163,6 +163,34 @@
       <h3 id="fb-lista-titulo">Comentarios</h3>
       <ul id="fb-lista" class="fb-lista" aria-labelledby="fb-lista-titulo"></ul>
     </div>
+    <div class="admin-block">
+      <h2 id="vis-titulo" tabindex="-1">Visitas a la página</h2>
+      <p class="ayuda">Cuántas veces se abre cada sección. Cuenta una vez por visitante y sesión. No cuenta tus visitas con la sesión del panel abierta ni la vista previa. Solo se ve aquí.</p>
+      <button type="button" id="vis-actualizar">Actualizar</button>
+      <p id="vis-status" class="status-msg" role="status"></p>
+      <table id="vis-tabla" class="fb-tabla">
+        <caption>Visitas por sección</caption>
+        <thead>
+          <tr>
+            <th scope="col">Sección</th>
+            <th scope="col">Hoy</th>
+            <th scope="col">Últimos 7 días</th>
+            <th scope="col">Total</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <table id="vis-dias" class="fb-tabla">
+        <caption>Visitas por día, todas las secciones (últimos 14 días)</caption>
+        <thead>
+          <tr>
+            <th scope="col">Día</th>
+            <th scope="col">Visitas</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </section>
 
   <script type="module" src="js/admin.js"></script>
